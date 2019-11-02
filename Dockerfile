@@ -1,12 +1,12 @@
-FROM alpine:latest
+FROM daocloud.io/library/nginx:1.16.0-alpine-perl
 MAINTAINER liberalman liberalman@github.com
 
 # install nginx runit curl
-RUN apk --update --no-cache add nginx curl runit
+RUN apk --update --no-cache add curl runit
 
-#ENV CT_URL http://releases.hashicorp.com/consul-template/0.19.0/consul-template_0.19.0_linux_amd64.tgz
+#ENV CT_URL https://releases.hashicorp.com/consul-template/0.22.0/consul-template_0.22.0_linux_amd64.tgz
 #RUN curl -L $CT_URL | tar -C /usr/local/bin/ --strip-components 1 -zxf -
-ADD consul-template_0.19.0_linux_amd64.tgz /usr/local/bin/
+ADD consul-template_0.22.0_linux_amd64.tgz /usr/local/bin/
 
 ADD nginx.service /etc/service/nginx/run
 RUN chmod a+x /etc/service/nginx/run

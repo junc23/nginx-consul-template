@@ -1,17 +1,32 @@
-upstream app {
-  least_conn;
-  {{range service "my-web-server"}}server {{.Address}}:{{.Port}} max_fails=3 fail_timeout=60 weight=1;
+{{range services}} {{$name := .Name}} {{$service := service .Name}}
+upstream {{$name}} {
+  zone upstream-{{$name}} 64k;
+  {{range $service}}server {{.Address}}:{{.Port}} max_fails=3 fail_timeout=60 weight=1;
   {{else}}server 127.0.0.1:65535; # force a 502{{end}}
+} {{end}}
+
+server {
+  listen 8001 http2;
+{{range services}} {{$name := .Name}} {{if .Name | regexMatch "([a-z]+)grpc"}}
+  location /{{$name}} {
+    grpc_pass grpc://{{$name}};
+  }{{end}}{{end}}
 }
 
 server {
   listen 80 default_server;
 
   location / {
-    proxy_pass http://app;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
+    root /usr/share/nginx/html/;
+    index index.html;
   }
-}
 
+  location /stub_status {
+    stub_status;
+  }
+{{range services}} {{$name := .Name}} {{if .Name | regexMatch "([a-z]+)grpc"}} {{else}}
+  location /{{$name}} {
+    proxy_http_version 1.1;
+    proxy_pass http://{{$name}};
+  }{{end}}{{end}}
+}
